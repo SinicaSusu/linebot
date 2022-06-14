@@ -30,7 +30,7 @@ def callback():
 
         return "OK"
 
-
+#鸚鵡文字回聲
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     get_message = event.message.text
@@ -38,3 +38,32 @@ def handle_message(event):
     # Send To Line
     reply = TextSendMessage(text=f"{get_message}")
     line_bot_api.reply_message(event.reply_token, reply)
+    
+#其他類型訊息
+@handler.add(MessageEvent, message=(ImageMessage, VideoMessage, AudioMessage))
+def handle_content_message(event):
+    if isinstance(event.message, ImageMessage):
+        ext = 'jpg'
+    elif isinstance(event.message, VideoMessage):
+        ext = 'mp4'
+    elif isinstance(event.message, AudioMessage):
+        ext = 'm4a'
+    else:
+        return
+    
+    message_content = line_bot_api.get_message_content(even.message.id)
+    wuth tempfile.NamedTemporaryFile(dir=static_tmp_path, prefix=ext +'-', delete=False) as tf:
+        for chunk in message_content.iter_content():
+            tf.write(chunk)
+        tempfile_path = tf.name
+    
+    dist_path = tempfile_path + '.' + ext
+    dist_name = os.path.basename(dist_path)
+    os.rename(tempfile_path, dist_path)
+    
+    line_bot_api.reply_message(
+        event.reply_token, [
+            TextSenMessage(text='Save content.'),
+            TextSenMessage(text=request.host_url + os.path.join('static', 'tmp', dist_name))
+        ])
+    
